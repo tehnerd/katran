@@ -16,6 +16,8 @@
 
 #include <gflags/gflags.h>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <vector>
 
@@ -33,7 +35,7 @@ int main(int argc, char** argv) {
   katran::Endpoint endpoint;
   double n1 = 0;
   double n2 = 0;
-
+  std::srand(std::time(nullptr));
   for (int i = 0; i < FLAGS_nreals; i++) {
     endpoint.num = i;
     endpoint.hash = 10 * i;
@@ -44,9 +46,9 @@ int main(int argc, char** argv) {
     }
     endpoints.push_back(endpoint);
   }
-
+  auto index_to_delete = std::rand()%endpoints.size();
   auto ch1 = katran::CHHelpers::GenerateMaglevHash(endpoints);
-  endpoints.pop_back();
+  endpoints.erase(endpoints.begin() + index_to_delete);
   auto ch2 = katran::CHHelpers::GenerateMaglevHash(endpoints);
 
   for (int i = 0; i < ch1.size(); i++) {
@@ -68,7 +70,7 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < ch1.size(); i++) {
     if (ch1[i] != ch2[i]) {
-      if (ch1[i] == (FLAGS_nreals - 1)) {
+      if (ch1[i] == index_to_delete) {
         n1++;
         continue;
       }
