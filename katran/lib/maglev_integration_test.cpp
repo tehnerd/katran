@@ -27,12 +27,16 @@ DEFINE_int64(weight, 100, "weights per real");
 DEFINE_int64(freq, 1, "how often real would have diff weight");
 DEFINE_int64(difweight, 1, "diff weight for test");
 DEFINE_int64(nreals, 400, "number of reals");
+DEFINE_int64(pos, -1, "position to delete");
+DEFINE_bool(all, false, "check all positions");
+
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   std::vector<katran::Endpoint> endpoints;
   std::vector<uint32_t> freq(FLAGS_nreals, 0);
   katran::Endpoint endpoint;
+  int index_to_delete;
   double n1 = 0;
   double n2 = 0;
   std::srand(std::time(nullptr));
@@ -46,15 +50,10 @@ int main(int argc, char** argv) {
     }
     endpoints.push_back(endpoint);
   }
-  auto index_to_delete = std::rand()%endpoints.size();
   auto ch1 = katran::CHHelpers::GenerateMaglevHash(endpoints);
-  endpoints.erase(endpoints.begin() + index_to_delete);
-  auto ch2 = katran::CHHelpers::GenerateMaglevHash(endpoints);
-
   for (int i = 0; i < ch1.size(); i++) {
     freq[ch1[i]]++;
   }
-
   std::vector<uint32_t> sorted_freq(freq);
 
   std::sort(sorted_freq.begin(), sorted_freq.end());
@@ -68,18 +67,58 @@ int main(int argc, char** argv) {
             << "\np25 w: " << sorted_freq[sorted_freq.size() / 4]
             << "\np5 w: " << sorted_freq[sorted_freq.size() / 20] << std::endl;
 
-  for (int i = 0; i < ch1.size(); i++) {
-    if (ch1[i] != ch2[i]) {
-      if (ch1[i] == index_to_delete) {
-        n1++;
-        continue;
-      }
-      n2++;
+
+
+
+  if (!FLAGS_all) {
+    if (FLAGS_pos >= 0) {
+      index_to_delete = FLAGS_pos;
+    } else {
+      index_to_delete = std::rand()%endpoints.size();
     }
+    endpoints.erase(endpoints.begin() + index_to_delete);
+    auto ch2 = katran::CHHelpers::GenerateMaglevHash(endpoints);
+    for (int i = 0; i < ch1.size(); i++) {
+      if (ch1[i] != ch2[i]) {
+        if (ch1[i] == index_to_delete) {
+          n1++;
+          continue;
+        }
+        n2++;
+      }
+    }
+    std::cout << "changes for affected real: " << n1 << "; and for not affected "
+              << n2 << " this is: " << n2 / ch1.size() * 100 << "%\n";
+
+
+  } else {
+    std::vector<double> affected_pct;
+    for (int i = 0; i < endpoints.size(); i++) {
+      double n1 = 0;
+      double n2 = 0;
+      auto ep = endpoints;
+      ep.erase(ep.begin() + i);
+      auto ch2 = katran::CHHelpers::GenerateMaglevHash(ep);
+      for (int j = 0; j < ch1.size(); j++) {
+        if (ch1[j] != ch2[j]) {
+          if (ch1[j] == i) {
+            n1++;
+            continue;
+          }
+          n2++;
+        }
+      }
+      affected_pct.push_back(n2/ch1.size()*100);
+    }
+    std::sort(affected_pct.begin(), affected_pct.end());
+    std::cout << "changes for non-affected real:\n"
+              << "min: " << affected_pct[0] << " max: " 
+              << affected_pct[affected_pct.size() - 1]
+              << "\n95 w: " << affected_pct[(sorted_freq.size() / 20) * 19]
+              << "\np75 w: " << affected_pct[(sorted_freq.size() / 20) * 15]
+              << "\np50 w: " << affected_pct[sorted_freq.size() / 2]
+              << "\np25 w: " << affected_pct[sorted_freq.size() / 4]
+              << "\np5 w: " << affected_pct[sorted_freq.size() / 20] << std::endl;
   }
-
-  std::cout << "changes for affected real: " << n1 << "; and for not affected "
-            << n2 << " this is: " << n2 / ch1.size() * 100 << "%\n";
-
   return 0;
 }
