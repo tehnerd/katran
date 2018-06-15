@@ -88,12 +88,17 @@ int main(int argc, char** argv) {
       }
     }
     std::cout << "changes for affected real: " << n1 << "; and for not affected "
-              << n2 << " this is: " << n2 / ch1.size() * 100 << "%\n";
+              << n2 << " this is: " << n2 / ch1.size() * 100 << "\n";
 
 
   } else {
     std::vector<double> affected_pct;
+    std::vector<int> pchanges;
+    for (auto& elem: endpoints) {
+      pchanges.push_back(0);
+    }
     for (int i = 0; i < endpoints.size(); i++) {
+      auto changes = pchanges;
       double n1 = 0;
       double n2 = 0;
       auto ep = endpoints;
@@ -102,17 +107,27 @@ int main(int argc, char** argv) {
       for (int j = 0; j < ch1.size(); j++) {
         if (ch1[j] != ch2[j]) {
           if (ch1[j] == i) {
+            // changes related to deleted real
             n1++;
             continue;
           }
+          // changes related to non deleted reals
           n2++;
+          changes[ch1[j]]++;
         }
       }
-      affected_pct.push_back(n2/ch1.size()*100);
+      std::sort(changes.begin(), changes.end());
+      std::cout << "max changes per real: " << changes.back()
+                << " p50 changes: " << changes[changes.size() / 2]
+                << " p75 changes: " << changes[((changes.size()) / 20) * 15]
+                << " p95 changes: " << changes[((changes.size()) / 20) * 19]
+                << std::endl;
+      //affected_pct.push_back(n2/ch1.size()*100);
+      affected_pct.push_back(n2);
     }
     std::sort(affected_pct.begin(), affected_pct.end());
     std::cout << "changes for non-affected real:\n"
-              << "min: " << affected_pct[0] << " max: " 
+              << "min: " << affected_pct[0] << " max: "
               << affected_pct[affected_pct.size() - 1]
               << "\n95 w: " << affected_pct[(sorted_freq.size() / 20) * 19]
               << "\np75 w: " << affected_pct[(sorted_freq.size() / 20) * 15]

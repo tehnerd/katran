@@ -65,13 +65,16 @@ std::vector<int> CHHelpers::GenerateMaglevHash(
   for (int i = 0; i < endpoints.size(); i++) {
     genMaglevPermuation(permutation, endpoints[i], i, ring_size);
   }
-
+  int zero_endpoints = 0;
   for (;;) {
     for (int i = 0; i < endpoints.size(); i++) {
+      if (endpoints[i].weight == 0 && zero_endpoints != endpoints.size()) {
+        continue;
+      }
       auto offset = permutation[2 * i];
       auto skip = permutation[2 * i + 1];
       // our realization of "weights" for maglev's hash.
-      for (int j = 0; j < endpoints[i].weight; j++) {
+      // for (int j = 0; j < endpoints[i].weight; j++) {
         auto cur = (offset + next[i] * skip) % ring_size;
         while (result[cur] >= 0) {
           next[i] += 1;
@@ -79,12 +82,19 @@ std::vector<int> CHHelpers::GenerateMaglevHash(
         }
         result[cur] = endpoints[i].num;
         next[i] += 1;
+        if (endpoints[i].weight != 0) {
+          endpoints[i].weight -= 1;
+          if (endpoints[i].weight == 0) {
+            zero_endpoints++;
+          }
+        }
+
         runs++;
         if (runs == ring_size) {
           return result;
         }
-      }
-      endpoints[i].weight = 1;
+      // }
+      // endpoints[i].weight = 1;
     }
   }
 };
