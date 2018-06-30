@@ -364,18 +364,35 @@ static inline int process_packet(void *data, __u64 off, void *data_end,
 
   vip.port = pckt.flow.port16[1];
   vip.proto = pckt.flow.proto;
-  vip_info = bpf_map_lookup_elem(&vip_map, &vip);
+
+  #ifdef LPM_VIP_LOOKUP
+  if (is_ipv6) {
+    struct v6_lpm_key lpm_key_v6 = {};
+    lpm_key_v6.prefixlen = 128;
+    memcpy(lpm_key_v6.addr, vip.vipv6, 16);
+    vip_info = bpf_map_lookup_elem(&lpm_vips_v6, &lpm_key_v6);
+  } else {
+    struct v4_lpm_key lpm_key_v4 = {};
+    lpm_key_v4.addr = vip.vip;
+    lpm_key_v4.prefixlen = 32;
+    vip_info = bpf_map_lookup_elem(&lpm_vips_v4, &lpm_key_v4);
+  }
+  #endif
+  
   if (!vip_info) {
-    vip.port = 0;
     vip_info = bpf_map_lookup_elem(&vip_map, &vip);
     if (!vip_info) {
-      return XDP_PASS;
-    }
+      vip.port = 0;
+      vip_info = bpf_map_lookup_elem(&vip_map, &vip);
+      if (!vip_info) {
+        return XDP_PASS;
+      }
 
-    if (!(vip_info->flags & F_HASH_DPORT_ONLY)) {
-      // VIP, which doesnt care about dst port (all packets to this VIP w/ diff
-      // dst port but from the same src port/ip must go to the same real
-      pckt.flow.port16[1] = 0;
+      if (!(vip_info->flags & F_HASH_DPORT_ONLY)) {
+        // VIP, which doesnt care about dst port (all packets to this VIP w/ diff
+        // dst port but from the same src port/ip must go to the same real
+        pckt.flow.port16[1] = 0;
+      }
     }
   }
 

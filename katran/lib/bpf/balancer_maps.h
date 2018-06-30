@@ -129,4 +129,21 @@ struct bpf_map_def SEC("maps") decap_dst = {
   .map_flags = NO_FLAGS,
 };
 #endif
+#ifdef LPM_VIP_LOOKUP
+struct bpf_map_def SEC("maps") lpm_vips_v4 = {
+  .type = BPF_MAP_TYPE_LPM_TRIE,
+  .key_size = sizeof(struct v4_lpm_key),
+  .value_size = sizeof(struct vip_meta),
+  .max_entries = MAX_VIPS,
+  .map_flags = BPF_F_NO_PREALLOC,
+};
+
+struct bpf_map_def SEC("maps") lpm_vips_v6 = {
+  .type = BPF_MAP_TYPE_LPM_TRIE,
+  .key_size = sizeof(struct v6_lpm_key),
+  .value_size = sizeof(struct vip_meta),
+  .max_entries = MAX_VIPS,
+  .map_flags = BPF_F_NO_PREALLOC,
+};
+#endif
 #endif // of _BALANCER_MAPS

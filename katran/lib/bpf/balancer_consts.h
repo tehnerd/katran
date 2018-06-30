@@ -215,6 +215,9 @@
  * LPM_SRC_LOOKUP - allow to do src based routing/dst decision override
  *
  * INLINE_DECAP - allow do to inline ipip decapsulation in XDP context
+ *
+ * LPM_VIP_LOOKUP - allow for vip to be a network address instead of single host
+ * (e.g. all traffic toward 172.16.0.0/24)
  */
 #ifdef LPM_SRC_LOOKUP
 #define INLINE_DECAP
