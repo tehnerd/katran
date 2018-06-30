@@ -137,7 +137,7 @@ AddressType KatranLb::validateAddress(
     const std::string& addr,
     bool allowNetAddr) {
   if (!folly::IPAddress::validate(addr)) {
-    if (allowNetAddr && (srcRouting_ || testing_)) {
+    if (allowNetAddr && (srcRouting_ || testing_ || lpmVips_)) {
       auto ret = folly::IPAddress::tryCreateNetwork(addr);
       if (ret.hasValue()) {
         return AddressType::NETWORK;
@@ -287,6 +287,11 @@ void KatranLb::featureDiscovering() {
     VLOG(2) << "inline decapsulation is supported";
     inlineDecap_ = true;
   }
+  res = bpfAdapter_.getMapFdByName("lpm_vips_v4");
+  if (res >= 0) {
+    VLOG(2) << "network vips are supported";
+    lpmVips_ = true;
+  }
 }
 
 void KatranLb::loadBpfProgs() {
@@ -422,7 +427,7 @@ std::vector<uint8_t> KatranLb::getMac() {
 }
 
 bool KatranLb::addVip(const VipKey& vip, const uint32_t flags) {
-  if (validateAddress(vip.address) == AddressType::INVALID) {
+  if (validateAddress(vip.address, true) == AddressType::INVALID) {
     LOG(ERROR) << "Invalid Vip address: " << vip.address;
     return false;
   }
@@ -1107,6 +1112,17 @@ std::unordered_map<uint32_t, std::string> KatranLb::getHealthcheckersDst() {
 }
 
 bool KatranLb::updateVipMap(
+    const ModifyAction action,
+    const VipKey& vip,
+    vip_meta* meta) {
+  if (validateAddress(vip.address, true) == AddressType::HOST) {
+    return updateHostVipMap(action, vip, meta);
+  } else {
+    return modifyLpmMap("lpm_vips", action, vip.address, meta);
+  }
+}
+
+bool KatranLb::updateHostVipMap(
     const ModifyAction action,
     const VipKey& vip,
     vip_meta* meta) {

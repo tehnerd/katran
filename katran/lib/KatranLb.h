@@ -441,6 +441,14 @@ class KatranLb {
       vip_meta* meta = nullptr);
 
   /**
+   * update host based vip (add or remove vip) in forwarding plane
+   */
+  bool updateHostVipMap(
+      const ModifyAction action,
+      const VipKey& vip,
+      vip_meta* meta = nullptr);
+
+  /**
    * update(add or remove) reals map in forwarding plane
    */
   bool updateRealsMap(const std::string& real, uint32_t num);
@@ -670,6 +678,13 @@ class KatranLb {
    * enabled/compiled in bpf forwarding plane
    */
   bool inlineDecap_{false};
+
+  /**
+   * flag which indicates that network based vips feature has been
+   * enabled/compiled in bpf forwarding plane
+   */
+  bool lpmVips_{false};
+
 
   /**
    * vector of forwarding CPUs (cpus/cores which are responisible for NICs
