@@ -161,6 +161,12 @@ void prepareOptionalLbData(katran::KatranLb& lb) {
   lb.addSrcRoutingRule({"fc00:2307::/64"}, "fc00::2307:4");
   lb.addSrcRoutingRule({"fc00:2::/64"}, "fc00::2307:10");
   lb.addInlineDecapDst("fc00:1404::1");
+  vip.address = "172.16.0.0/24";
+  lb.addVip(vip);
+  addReals(lb, vip, {"10.0.0.1", "10.0.0.2", "10.0.0.3"});
+  vip.address = "fc00:2307::/64";
+  lb.addVip(vip);
+  addReals(lb, vip, {"fc00:100::1", "fc00:100::2", "fc00:100::3"});
 }
 
 void preparePerfTestingLbData(katran::KatranLb& lb) {

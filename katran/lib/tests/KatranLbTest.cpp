@@ -122,7 +122,7 @@ TEST_F(KatranLbTest, testVipHelpers) {
 
 TEST_F(KatranLbTest, testAddingInvalidVip) {
   VipKey v;
-  v.address = "fc00::/64";
+  v.address = "fc00::zzz";
   v.port = 0;
   v.proto = 6;
   // adding vip which is an network address, not a host.
